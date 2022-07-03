@@ -70,17 +70,17 @@ Created symlink from /etc/systemd/system/multi-user.target.wants/docker.service 
 
 登录阿里云，控制台，容器镜像，镜像加速器
 
+### java项目使用docker部署
 
+#### **docker镜像操作(Dockerfile)**
 
-**docker镜像操作**
-
-项目jar包，制作镜像
+##### 项目jar包，制作镜像
 
 1、文件路径
 
 /usr/local/dev
 
-2、编写的`Dockerfile文件为：
+##### 2、编写的`Dockerfile文件为：
 
 FROM openjdk:8-jdk-alpine
 VOLUME /tmp
@@ -94,36 +94,53 @@ VOLUME指向了一个/tmp的目录，由于Spring Boot使用内置的Tomcat容�
 项目的dspring-boot-docker.jar作为app.jar添加到容器。
 ENTRYPOINT 执行项目 app.jar。为了缩短 Tomcat 启动时间，添加一个系统属性指向/dev/urandom 作为 Entropy Source
 
-3、构建Docker镜像
+##### 3、构建Docker镜像
 
 在/usr/local/dev目录下，执行`Docker`的命令来构建镜像。
 
+```bash
 docker build -t yejinliang/ulserver-docker-t:latest .
+```
 
 
 
-4、运行容器
+##### 4、运行容器
 
+```bash
 docker run -d --name ulserver-docker -p 8081:443 yejinliang/ulserver-docker-t --restart=always
+```
+
 这个表示docker容器在停止或服务器开机之后会自动重新启动 --restart=always 这块可不执行
 
 或者加
 
 docker update --restart=always spring-boot-helloworld-docker
 
-6、docker拉取mysql
+### docker镜像操作
 
-​	docker pull mysql
+#### 1、docker拉取mysql
 
-​	docker pull mysql:5.5   //标签
+```shell
+	docker pull mysql
+```
 
-​	列表
+版本
 
-​		docker images   //查看本地所有镜像
+```shell
+	docker pull mysql:5.5   
+```
 
-​	 删除
+查看本地所有镜像列表
 
-​		docker rmi image-id  //image-id是镜像id
+```shell
+	docker images   
+```
+
+​	 删除,image-id是镜像id
+
+```shell
+	docker rmi image-id 
+```
 
 **docker容器操作**
 
@@ -228,6 +245,75 @@ Thu Jan 28 10:56:42 CST 2021
 
 2. 重启MySQL容器
 sudo docker restart 231458904a77
+
+### docker私有库
+
+#### 拉取registry镜像
+
+```shell
+git pull registry
+```
+
+#### 镜像容器化
+
+```shell
+docker run -d -p 5000:5000 -v /usr/local/registry:/tem/registry --privileged=true registry
+```
+
+#### 容器外部制作镜像
+
+```shell
+docker commit -m "springboot项目制作镜像" -a="yejinliang" b1f30ae226b9 springboot-ulserver:1.1
+```
+
+#### curl验证私服库上有什么镜像
+
+```shell
+curl -XGET http://43.129.231.24:5000/v2/_catalog
+```
+
+结果（空的）
+
+```shell
+{"repositories":[]}
+```
+
+#### 将镜像修改符合私服规范的Tag
+
+镜像命名的时候最好把版本号带上，查询的时候看不到版本号
+
+```shell
+docker tag springboot-ulserver:1.1 43.129.231.24:5000/springboot_ulserver:1.1
+```
+
+#### 修改配置文件使之支持http
+
+```shell
+{
+  "registry-mirrors": ["https://78603yx8.mirror.aliyuncs.com"],
+  "insecure-registries":["43.129.231.24:5000"]
+}
+```
+
+#### 重启docker,使配置生效
+
+```shell
+systemctl restart docker
+```
+
+#### docker push，推送到私服
+
+```shell
+docker push 43.129.231.24:5000/springboot_ulserver:1.1
+```
+
+#### 从私服仓库中拉取镜像
+
+```shell
+docker pull 43.129.231.24:5000/springboot_ulserver:1.1
+```
+
+
 
 ### 容器数据卷
 
